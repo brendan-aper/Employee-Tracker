@@ -1,9 +1,10 @@
+// Establish connection to mysql and export it.
 const mysql = require("mysql2");
 
 const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "",
+  password: "T8Es66@RiVuT",
   database: "employee_db"
 });
 
