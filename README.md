@@ -16,9 +16,11 @@ Before running the Employee Tracker application, please ensure you have the foll
 
 Follow these steps to set up the application:
 
+Navigate to the project's [GitHub](https://github.com/brendan-aper/Employee-Tracker)
+
 **Clone the repository from GitHub:**
 ```
-git clone https://github.com/your-username/employee-tracker.git
+git clone https://github.com/brendan-aper/Employee-Tracker.git
 ```
 
 **Navigate to the project directory:**
@@ -53,6 +55,8 @@ node index.js
 
 Once you start the Employee Tracker application, you will be presented with a menu of options. You can navigate through the menu using the arrow keys and select the desired option by pressing the "Enter" key.
 
+![](./assets/images/CMS-employee-tracker.png)
+
 ### Main Menu
 **View All Departments:** Select this option to view a formatted table displaying all department names and IDs.
 
@@ -81,3 +85,16 @@ Once you start the Employee Tracker application, you will be presented with a me
 ### Exiting the Application
 To exit the application, select the "Quit" option in the main menu.
 
+You can also view this [Video Walkthrough](https://drive.google.com/file/d/1U74BuwdhOzYAqSwEs1yQCKmv4mcXZABK/view)
+
+## Contributing
+No contributions are taken at this time.
+
+## Questions
+If you have any questions about the project feel free to [Email Me](mailto:brendanaper@gmail.com)
+
+Follow me on [GitHub](https://github.com/brendan-aper)
+
+## License
+
+This project is licensed under the [MIT License](https://opensource.org/license/mit/).
