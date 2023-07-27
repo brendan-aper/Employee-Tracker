@@ -57,7 +57,7 @@ function init() {
       viewEmployeesDepartment();
       break;
     case "Remove Departments | Roles | Employees":
-      RemoveData();
+      removeData();
       break;
     case "View the total utilized budget of a department":
       viewDepartmentBudget();
@@ -309,6 +309,266 @@ function addManager() {
   });
 }
 
+function updateEmployeeRole() {
+  const queryEmployees =
+    "SELECT employee.id, employee.first_name, employee.last_name, roles.title FROM employee LEFT JOIN roles ON employee.role_id = roles.id";
+  const queryRoles = "SELECT * FROM roles";
+  connection.query(queryEmployees, (err, resEmployees) => {
+    if (err) throw err;
+    connection.query(queryRoles, (err, resRoles) => {
+      if (err) throw err;
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            name: "employee",
+            message: "Select the employee to update:",
+            choices: resEmployees.map(
+              (employee) =>
+                `${employee.first_name} ${employee.last_name}`
+            ),
+          },
+          {
+            type: "list",
+            name: "role",
+            message: "Select the new role:",
+            choices: resRoles.map((role) => role.title),
+          },
+        ])
+        .then((answers) => {
+          const employee = resEmployees.find(
+            (employee) =>
+              `${employee.first_name} ${employee.last_name}` === answers.employee
+          );
+          const role = resRoles.find(
+            (role) => role.title === answers.role
+          );
+          const query = "UPDATE employee SET role_id = ? WHERE id = ?";
+          connection.query(query, [role.id, employee.id], (err, res) => {
+            if (err) throw err;
+              console.log(
+                `Updated ${employee.first_name} ${employee.last_name}'s role to ${role.title} in the database!`
+              );
+            init();
+          }
+          );
+        });
+      });
+  });
+}
 
+function viewEmployeesManager() {
+  const query = `
+    SELECT 
+      e.id, 
+      e.first_name, 
+      e.last_name, 
+      r.title, 
+      d.department_name, 
+      CONCAT(m.first_name, ' ', m.last_name) AS manager_name
+    FROM 
+      employee e
+      INNER JOIN roles r ON e.role_id = r.id
+      INNER JOIN departments d ON r.department_id = d.id
+      LEFT JOIN employee m ON e.manager_id = m.id
+    ORDER BY 
+      manager_name, 
+      e.last_name, 
+      e.first_name
+  `;
+
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+      const employeesByManager = res.reduce((acc, cur) => {
+        const managerName = cur.manager_name;
+          if (acc[managerName]) {
+            acc[managerName].push(cur);
+          } else {
+              acc[managerName] = [cur];
+          }
+          return acc;
+      }, {});
+      console.log("Employees by manager:");
+      for (const managerName in employeesByManager) {
+        console.log(`\n${managerName}:`);
+        const employees = employeesByManager[managerName];
+        employees.forEach((employee) => {
+          console.log(
+            `  ${employee.first_name} ${employee.last_name} | ${employee.title} | ${employee.department_name}`
+          );
+        });
+      }
+
+      init();
+  });
+}
+
+function viewEmployeesDepartment() {
+  const query =
+    "SELECT departments.department_name, employee.first_name, employee.last_name FROM employee INNER JOIN roles ON employee.role_id = roles.id INNER JOIN departments ON roles.department_id = departments.id ORDER BY departments.department_name ASC";
+
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    console.log("\nEmployees by department:");
+    console.table(res);
+      init();
+  });
+}
+
+function removeData() {
+  inquirer
+    .prompt({
+      type: "list",
+      name: "data",
+      message: "What would you like to Remove?",
+      choices: ["Employee", "Role", "Department"],
+    })
+    .then((answer) => {
+      switch (answer.data) {
+        case "Employee":
+          deleteEmployee();
+          break;
+        case "Role":
+          deleteRole();
+          break;
+        case "Department":
+          deleteDepartment();
+          break;
+        default:
+          console.log(`Invalid data: ${answer.data}`);
+          init();
+          break;
+          }
+    });
+}
+
+function deleteEmployee() {
+  const query = "SELECT * FROM employee";
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    const employeeList = res.map((employee) => ({
+      name: `${employee.first_name} ${employee.last_name}`,
+      value: employee.id,
+    }));
+      employeeList.push({ name: "Go Back", value: "back" });
+      inquirer
+        .prompt({
+          type: "list",
+          name: "id",
+          message: "Select the employee you want to delete:",
+          choices: employeeList,
+        })
+        .then((answer) => {
+          if (answer.id === "back") {
+            removeData();
+            return;
+          }
+          const query = "DELETE FROM employee WHERE id = ?";
+          connection.query(query, [answer.id], (err, res) => {
+            if (err) throw err;
+            console.log(`Deleted employee with ID ${answer.id} from the database!`);
+            init();
+          });
+        });
+  });
+}
+
+function deleteRole() {
+  const query = "SELECT * FROM roles";
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    const choices = res.map((role) => ({
+      name: `${role.title} (${role.id}) - ${role.salary}`,
+      value: role.id,
+    }));
+    choices.push({ name: "Go Back", value: null });
+    inquirer
+      .prompt({
+        type: "list",
+        name: "roleId",
+        message: "Select the role you want to delete:",
+        choices: choices,
+      })
+      .then((answer) => {
+        if (answer.roleId === null) {
+          removeData();
+          return;
+        }
+        const query = "DELETE FROM roles WHERE id = ?";
+        connection.query(query, [answer.roleId], (err, res) => {
+          if (err) throw err;
+          console.log(`Deleted role with ID ${answer.roleId} from the database!`);
+          init();
+        });
+      });
+  });
+}
+
+function deleteDepartment() {
+  const query = "SELECT * FROM departments";
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    const departmentChoices = res.map((department) => ({
+      name: department.department_name,
+      value: department.id,
+    }));
+    inquirer
+      .prompt({
+        type: "list",
+        name: "departmentId",
+        message: "Which department do you want to delete?",
+        choices: [
+          ...departmentChoices,
+          { name: "Go Back", value: "back" },
+        ],
+      })
+      .then((answer) => {
+        if (answer.departmentId === "back") {
+          removeData();
+        } else {
+            const query = "DELETE FROM departments WHERE id = ?";
+            connection.query(query, [answer.departmentId], (err, res) => {
+              if (err) throw err;
+              console.log(`Deleted department with ID ${answer.departmentId} from the database!`);
+              init();
+            });
+          }
+      });
+  });
+}
+
+function viewDepartmentBudget() {
+  const query = "SELECT * FROM departments";
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    const departmentChoices = res.map((department) => ({
+      name: department.department_name,
+      value: department.id,
+    }));
+    inquirer
+      .prompt({
+        type: "list",
+        name: "departmentId",
+        message: "Which department do you want to calculate the total salary for?",
+        choices: departmentChoices,
+      })
+      .then((answer) => {
+        const query =
+          `SELECT departments.department_name AS department,
+           SUM(roles.salary) AS total_salary
+           FROM departments
+           INNER JOIN roles ON departments.id = roles.department_id
+           INNER JOIN employee ON roles.id = employee.role_id
+           WHERE departments.id = ?
+           GROUP BY departments.id;`;
+        connection.query(query, [answer.departmentId], (err, res) => {
+          if (err) throw err;
+          const totalSalary = res[0].total_salary;
+          console.log(`The total salary for employees in this department is $${totalSalary}`);
+          init();
+        });
+      });
+  });
+}
 
 init();
